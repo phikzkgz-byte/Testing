@@ -102,38 +102,36 @@ export default function App() {
   const [settings,   setSettings]   = useState({ title: "Roleta PG Soft", locked: false, showBank: true, autoSpin: false, winnerSound: true });
   const [adminPass,  setAdminPass]  = useState(DEFAULT_PASS);
 
-  // Load shared storage once
   useEffect(() => {
-  try {
-    const bankStored = localStorage.getItem("pgbank");
-    const depositsStored = localStorage.getItem("pgdeposits");
-    const gamesStored = localStorage.getItem("pggames");
-    const pixStored = localStorage.getItem("pg_pix_config");
-    const settingsStored = localStorage.getItem("pg_settings");
-    const passStored = localStorage.getItem(ADMIN_PASSWORD_KEY);
+    try {
+      const bankStored     = localStorage.getItem("pgbank");
+      const depositsStored = localStorage.getItem("pgdeposits");
+      const gamesStored    = localStorage.getItem("pggames");
+      const pixStored      = localStorage.getItem("pg_pix_config");
+      const settingsStored = localStorage.getItem("pg_settings");
+      const passStored     = localStorage.getItem(ADMIN_PASSWORD_KEY);
 
-    if (bankStored) setBank(parseFloat(bankStored) || 0);
-    if (depositsStored) setDeposits(JSON.parse(depositsStored) || []);
-    if (gamesStored) {
-      const g = JSON.parse(gamesStored);
-      if (g?.length) setGames(g);
+      if (bankStored)     setBank(parseFloat(bankStored) || 0);
+      if (depositsStored) setDeposits(JSON.parse(depositsStored) || []);
+      if (gamesStored) {
+        const g = JSON.parse(gamesStored);
+        if (g?.length) setGames(g);
+      }
+      if (pixStored)      setPixConfig(p => ({ ...p, ...JSON.parse(pixStored) }));
+      if (settingsStored) setSettings(s => ({ ...s, ...JSON.parse(settingsStored) }));
+      if (passStored)     setAdminPass(passStored);
+    } catch (e) {
+      console.error("Erro ao carregar storage:", e);
     }
-    if (pixStored) setPixConfig(p => ({ ...p, ...JSON.parse(pixStored) }));
-    if (settingsStored) setSettings(s => ({ ...s, ...JSON.parse(settingsStored) }));
-    if (passStored) setAdminPass(passStored);
-
-  } catch (e) {
-    console.error("Erro ao carregar storage:", e);
-  }
-}, []);
+  }, []);
 
   function persist(key, val) {
-  try {
-    localStorage.setItem(key, typeof val === "string" ? val : JSON.stringify(val));
-  } catch (e) {
-    console.error("Erro ao salvar:", e);
+    try {
+      localStorage.setItem(key, typeof val === "string" ? val : JSON.stringify(val));
+    } catch (e) {
+      console.error("Erro ao salvar:", e);
+    }
   }
-}
 
   if (view === "admin") {
     return <AdminPanel
@@ -197,7 +195,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
 
     ctx.clearRect(0,0,W,H);
 
-    // Outer glow
     const grad = ctx.createRadialGradient(cx,cy,R-15,cx,cy,R+5);
     grad.addColorStop(0,"rgba(212,175,55,0.6)");
     grad.addColorStop(1,"rgba(212,175,55,0)");
@@ -232,7 +229,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
       ctx.restore();
     });
 
-    // Hub
     const hubGrad = ctx.createRadialGradient(cx-5,cy-5,2,cx,cy,28);
     hubGrad.addColorStop(0,"#FFE87C"); hubGrad.addColorStop(0.5,"#D4AF37"); hubGrad.addColorStop(1,"#8B6914");
     ctx.beginPath(); ctx.arc(cx,cy,28,0,2*Math.PI); ctx.fillStyle=hubGrad; ctx.fill();
@@ -241,7 +237,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
     ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText("PG",cx,cy-5); ctx.fillText("SOFT",cx,cy+6);
 
-    // Pointer
     ctx.save(); ctx.translate(cx,8);
     ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(14,0); ctx.lineTo(0,28); ctx.closePath();
     ctx.fillStyle="#D4AF37"; ctx.fill(); ctx.strokeStyle="#FFE87C"; ctx.lineWidth=1.5; ctx.stroke();
@@ -314,12 +309,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
     await persist("pggames", updated.map(x => ({ ...x, _imgEl: undefined })));
   }
 
-  async function removeGame(id) {
-    const updated = games.filter(g => g.id !== id);
-    setGames(updated);
-    await persist("pggames", updated.map(x => ({ ...x, _imgEl: undefined })));
-  }
-
   function generatePixKey(amount) {
     return `Chave PIX: ${pixConfig.key}\nBeneficiário: ${pixConfig.beneficiary}\nBanco: ${pixConfig.bank}\nValor: R$ ${Number(amount).toFixed(2)}`;
   }
@@ -340,10 +329,10 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
     spinBtn: { background: spinning||settings.locked ? "rgba(100,100,100,0.3)" : "linear-gradient(135deg, #D4AF37, #8B6914)", color: spinning||settings.locked ? "#666" : "#1a0d00", border:"none", borderRadius:12, padding:"14px 40px", fontSize:16, fontWeight:800, cursor: spinning||settings.locked ? "not-allowed" : "pointer", letterSpacing:2, textTransform:"uppercase", transition:"all 0.3s" },
     addBtn: { background:"rgba(212,175,55,0.1)", color:"#D4AF37", border:"1px solid rgba(212,175,55,0.4)", borderRadius:12, padding:"14px 24px", fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1 },
     gameList: { maxWidth:600, margin:"0 auto", padding:"0 20px" },
+    // ✅ Sem botão de remover — apenas exibe o jogo
     gameItem: { display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, marginBottom:8, background:"rgba(212,175,55,0.05)", border:"1px solid rgba(212,175,55,0.15)" },
     gameImg: { width:40, height:40, borderRadius:8, objectFit:"cover", background:"#222" },
     gameName: { color:"#FFE87C", fontWeight:600, fontSize:14, flex:1 },
-    removeBtn: { background:"rgba(180,30,30,0.3)", color:"#ff6b6b", border:"1px solid rgba(255,100,100,0.3)", borderRadius:6, padding:"4px 10px", cursor:"pointer", fontSize:11 },
     depSec: { maxWidth:600, margin:"20px auto 0", padding:"0 20px" },
     depTitle: { color:"rgba(212,175,55,0.6)", fontSize:11, letterSpacing:2, textTransform:"uppercase", marginBottom:10 },
     depItem: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", borderRadius:8, marginBottom:6, background:"rgba(50,188,173,0.08)", border:"1px solid rgba(50,188,173,0.2)" },
@@ -355,6 +344,7 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
     cancelBtn: { width:"100%", padding:"11px", borderRadius:10, border:"1px solid rgba(212,175,55,0.3)", background:"transparent", color:"#D4AF37", fontSize:13, cursor:"pointer", marginTop:8 },
     pixBox: { background:"rgba(0,0,0,0.4)", borderRadius:12, padding:16, margin:"16px 0", border:"1px solid rgba(50,188,173,0.3)" },
     pixText: { color:"#32BCAD", fontSize:12, fontFamily:"monospace", lineHeight:1.8, whiteSpace:"pre-wrap" },
+    adminHint: { color:"rgba(212,175,55,0.35)", fontSize:10, letterSpacing:1, textAlign:"center", marginTop:4 },
   };
 
   return (
@@ -398,7 +388,7 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
         <button style={rS.addBtn} onClick={() => setShowAddGame(true)}>＋ Adicionar Jogo</button>
       </div>
 
-      {/* Games list */}
+      {/* Games list — SEM botão de remover para usuários comuns */}
       <div style={rS.gameList}>
         <div style={rS.depTitle}>Jogos na Roleta ({games.length})</div>
         {games.map(g => (
@@ -407,10 +397,11 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
               <img src={g.img} alt={g.name} style={{ width:"100%", height:"100%", borderRadius:8, objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
             </div>
             <div style={rS.gameName}>{g.name}</div>
-            <div style={{ width:16, height:16, borderRadius:4, background:g.color, marginRight:4 }} />
-            <button style={rS.removeBtn} onClick={() => removeGame(g.id)}>✕</button>
+            <div style={{ width:16, height:16, borderRadius:4, background:g.color }} />
+            {/* ✅ Botão de remover REMOVIDO da view pública — disponível apenas no Admin */}
           </div>
         ))}
+        <div style={rS.adminHint}>🔒 Remoção de jogos disponível apenas no painel Admin</div>
       </div>
 
       {/* Deposit history */}
@@ -569,7 +560,9 @@ function AdminPanel({ bank, setBank, deposits, setDeposits, games, setGames, pix
     await save("pggames", updated.map(x => ({...x,_imgEl:undefined})));
   }
 
+  // ✅ Remoção de jogos exclusiva do Admin
   async function removeGameAdmin(id) {
+    if (!confirm("Remover este jogo da roleta?")) return;
     const updated = games.filter(g => g.id!==id);
     setGames(updated);
     await save("pggames", updated.map(x => ({...x,_imgEl:undefined})));
@@ -638,10 +631,10 @@ function AdminPanel({ bank, setBank, deposits, setDeposits, games, setGames, pix
             <div style={{ color:G.goldLight, fontSize:22, fontWeight:800, marginBottom:6 }}>Dashboard</div>
             <div style={{ color:G.textMuted, fontSize:13, marginBottom:24 }}>Visão geral do sistema em tempo real</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))", gap:14, marginBottom:24 }}>
-              <StatCard icon="💰" label="Banca Atual"     value={`R$ ${bank.toFixed(2).replace(".",",")}`}          sub="Acumulado total"   accent={G.gold}  />
+              <StatCard icon="💰" label="Banca Atual"      value={`R$ ${bank.toFixed(2).replace(".",",")}`}          sub="Acumulado total"   accent={G.gold}  />
               <StatCard icon="📥" label="Total Depositado" value={`R$ ${totalDeposited.toFixed(2).replace(".",",")}`} sub={`${deposits.length} depósitos`} accent={G.blue}  />
-              <StatCard icon="🎮" label="Jogos Ativos"    value={games.length}                                        sub="Na roleta agora"   accent={G.green} />
-              <StatCard icon="📊" label="Ticket Médio"    value={`R$ ${avgDeposit.toFixed(2).replace(".",",")}`}     sub="Por depósito"      accent={G.amber} />
+              <StatCard icon="🎮" label="Jogos Ativos"     value={games.length}                                        sub="Na roleta agora"   accent={G.green} />
+              <StatCard icon="📊" label="Ticket Médio"     value={`R$ ${avgDeposit.toFixed(2).replace(".",",")}`}     sub="Por depósito"      accent={G.amber} />
             </div>
             <Section title="Últimos Depósitos" icon="📋">
               {deposits.length===0 && <div style={{ color:G.textMuted, fontSize:13 }}>Nenhum depósito registrado.</div>}
@@ -734,6 +727,7 @@ function AdminPanel({ bank, setBank, deposits, setDeposits, games, setGames, pix
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     <div style={{ width:14, height:14, borderRadius:3, background:g.color }} />
+                    {/* ✅ Botão de remover disponível SOMENTE aqui no Admin */}
                     <Btn onClick={() => removeGameAdmin(g.id)} variant="danger" small>✕ Remover</Btn>
                   </div>
                 </div>
@@ -747,9 +741,9 @@ function AdminPanel({ bank, setBank, deposits, setDeposits, games, setGames, pix
           <>
             <div style={{ color:G.goldLight, fontSize:22, fontWeight:800, marginBottom:24 }}>Configuração PIX</div>
             <Section title="Dados do Recebedor" icon="🏦">
-              <AInput label="Chave PIX"           value={pixConfig.key}         onChange={v => setPixConfig(p => ({...p,key:v}))}         placeholder="email@dominio.com / CPF / telefone" />
-              <AInput label="Nome do Beneficiário" value={pixConfig.beneficiary} onChange={v => setPixConfig(p => ({...p,beneficiary:v}))} placeholder="NOME COMPLETO" />
-              <AInput label="Banco"                value={pixConfig.bank}        onChange={v => setPixConfig(p => ({...p,bank:v}))}         placeholder="260 - Nubank" />
+              <AInput label="Chave PIX"            value={pixConfig.key}         onChange={v => setPixConfig(p => ({...p,key:v}))}         placeholder="email@dominio.com / CPF / telefone" />
+              <AInput label="Nome do Beneficiário"  value={pixConfig.beneficiary} onChange={v => setPixConfig(p => ({...p,beneficiary:v}))} placeholder="NOME COMPLETO" />
+              <AInput label="Banco"                 value={pixConfig.bank}        onChange={v => setPixConfig(p => ({...p,bank:v}))}         placeholder="260 - Nubank" />
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 <AInput label="Depósito Mínimo (R$)" value={pixConfig.minDeposit} onChange={v => setPixConfig(p => ({...p,minDeposit:v}))} type="number" />
                 <AInput label="Depósito Máximo (R$)" value={pixConfig.maxDeposit} onChange={v => setPixConfig(p => ({...p,maxDeposit:v}))} type="number" />
@@ -811,8 +805,8 @@ function AdminPanel({ bank, setBank, deposits, setDeposits, games, setGames, pix
               </div>
             </Section>
             <Section title="Alterar Senha do Admin" icon="🔐">
-              <AInput label="Nova Senha"         value={newPass}      onChange={setNewPass}      type="password" placeholder="••••••••" />
-              <AInput label="Confirmar Nova Senha" value={confirmPass} onChange={setConfirmPass} type="password" placeholder="••••••••" />
+              <AInput label="Nova Senha"           value={newPass}      onChange={setNewPass}      type="password" placeholder="••••••••" />
+              <AInput label="Confirmar Nova Senha" value={confirmPass}  onChange={setConfirmPass}  type="password" placeholder="••••••••" />
               {passMsg && <div style={{ color:passMsg.startsWith("✅")?G.green:G.red, fontSize:13, marginBottom:12 }}>{passMsg}</div>}
               <Btn onClick={changePass} color={G.amber}>🔑 Alterar Senha</Btn>
             </Section>
