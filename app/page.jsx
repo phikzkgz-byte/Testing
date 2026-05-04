@@ -165,15 +165,17 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
   const animRef          = useRef(null);
   const currentRotRef    = useRef(0);
 
-  const [spinning,       setSpinning]       = useState(false);
-  const [winner,         setWinner]         = useState(null);
-  const [showWinner,     setShowWinner]     = useState(false);
-  const [showDeposit,    setShowDeposit]    = useState(false);
-  const [showPixModal,   setShowPixModal]   = useState(false);
-  const [showAddGame,    setShowAddGame]    = useState(false); // não usado na view pública
-  const [depositAmount,  setDepositAmount]  = useState("");
-  const [depositorName,  setDepositorName]  = useState("");
-  const [pendingDeposit, setPendingDeposit] = useState(null);
+  const [spinning,        setSpinning]        = useState(false);
+  const [winner,          setWinner]          = useState(null);
+  const [showWinner,      setShowWinner]      = useState(false);
+  const [showDeposit,     setShowDeposit]     = useState(false);
+  const [showPixModal,    setShowPixModal]    = useState(false);
+  const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [playerName,      setPlayerName]      = useState("");
+  const [currentPlayer,   setCurrentPlayer]   = useState("");
+  const [depositAmount,   setDepositAmount]   = useState("");
+  const [depositorName,   setDepositorName]   = useState("");
+  const [pendingDeposit,  setPendingDeposit]  = useState(null);
 
   function shadeColor(hex, amount) {
     try {
@@ -254,8 +256,13 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
     drawWheel();
   }, [games, drawWheel]);
 
-  function spin() {
+  function handleSpinClick() {
     if (spinning || games.length < 2 || settings.locked) return;
+    setPlayerName(""); setShowPlayerModal(true);
+  }
+
+  function startSpin(name) {
+    setCurrentPlayer(name); setShowPlayerModal(false);
     setSpinning(true); setWinner(null); setShowWinner(false);
     const totalSpin = 2*Math.PI*(8+Math.random()*6);
     const targetRot = currentRotRef.current + totalSpin;
@@ -372,7 +379,7 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
 
       {/* Controls */}
       <div style={rS.controls}>
-        <button style={rS.spinBtn} onClick={spin} disabled={spinning||settings.locked}>
+        <button style={rS.spinBtn} onClick={handleSpinClick} disabled={spinning||settings.locked}>
           {settings.locked ? "🔒 ROLETA BLOQUEADA" : spinning ? "⏳ GIRANDO..." : "🎯 GIRAR ROLETA"}
         </button>
       </div>
@@ -414,17 +421,51 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
         <div style={rS.overlay} onClick={() => setShowWinner(false)}>
           <div style={rS.modal} onClick={e => e.stopPropagation()}>
             <div style={{ textAlign:"center", padding:"10px 0" }}>
-              <div style={{ fontSize:40, marginBottom:8 }}>🎉</div>
-              <div style={{ color:"rgba(212,175,55,0.7)", fontSize:12, letterSpacing:3, marginBottom:8 }}>PARABÉNS! O SORTEADO FOI:</div>
-              <img src={winner.img} alt={winner.name} style={{ width:80, height:80, borderRadius:12, objectFit:"cover", margin:"0 auto 12px", display:"block", border:"3px solid #D4AF37" }} onError={e => { e.target.style.display="none"; }} />
-              <div style={{ color:"#FFE87C", fontSize:28, fontWeight:800, textShadow:"0 0 20px rgba(212,175,55,0.6)" }}>{winner.name}</div>
+              <div style={{ fontSize:44, marginBottom:6 }}>🎉</div>
+              {/* Nome do jogador */}
+              {currentPlayer && (
+                <div style={{ display:"inline-block", background:"rgba(212,175,55,0.15)", border:"1px solid rgba(212,175,55,0.4)", borderRadius:30, padding:"6px 20px", marginBottom:14 }}>
+                  <span style={{ color:"rgba(212,175,55,0.7)", fontSize:11, letterSpacing:2 }}>JOGADOR: </span>
+                  <span style={{ color:"#FFE87C", fontSize:15, fontWeight:800, letterSpacing:1 }}>{currentPlayer}</span>
+                </div>
+              )}
+              <div style={{ color:"rgba(212,175,55,0.6)", fontSize:11, letterSpacing:3, marginBottom:12 }}>
+                {currentPlayer ? `${currentPlayer.split(" ")[0].toUpperCase()} VAI JOGAR:` : "O JOGO SORTEADO FOI:"}
+              </div>
+              <img src={winner.img} alt={winner.name} style={{ width:90, height:90, borderRadius:14, objectFit:"cover", margin:"0 auto 14px", display:"block", border:"3px solid #D4AF37", boxShadow:"0 0 24px rgba(212,175,55,0.4)" }} onError={e => { e.target.style.display="none"; }} />
+              <div style={{ color:"#FFE87C", fontSize:30, fontWeight:800, textShadow:"0 0 24px rgba(212,175,55,0.7)", lineHeight:1.2 }}>{winner.name}</div>
               {settings.showBank && (
-                <div style={{ color:"rgba(212,175,55,0.5)", fontSize:13, marginTop:8 }}>
+                <div style={{ color:"rgba(212,175,55,0.5)", fontSize:13, marginTop:12 }}>
                   Banca atual: <span style={{ color:"#FFE87C", fontWeight:700 }}>R$ {bank.toFixed(2).replace(".",",")}</span>
                 </div>
               )}
             </div>
-            <button style={{ ...rS.confirmBtn, marginTop:20 }} onClick={() => setShowWinner(false)}>Fechar</button>
+            <button style={{ ...rS.confirmBtn, marginTop:22 }} onClick={() => setShowWinner(false)}>Fechar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: nome do jogador antes de girar */}
+      {showPlayerModal && (
+        <div style={rS.overlay}>
+          <div style={rS.modal}>
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <div style={{ fontSize:36, marginBottom:8 }}>🎯</div>
+              <div style={rS.modalTitle}>Quem vai girar?</div>
+              <div style={{ color:"rgba(212,175,55,0.5)", fontSize:13, marginTop:-12 }}>Digite o nome do jogador para sortear o jogo</div>
+            </div>
+            <input
+              style={rS.input}
+              placeholder="Nome do jogador..."
+              value={playerName}
+              onChange={e => setPlayerName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && playerName.trim()) startSpin(playerName.trim()); }}
+              autoFocus
+            />
+            <button style={rS.confirmBtn} onClick={() => { if (playerName.trim()) startSpin(playerName.trim()); }} disabled={!playerName.trim()}>
+              🎰 Girar a Roleta!
+            </button>
+            <button style={rS.cancelBtn} onClick={() => setShowPlayerModal(false)}>Cancelar</button>
           </div>
         </div>
       )}
