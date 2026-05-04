@@ -170,11 +170,10 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
   const [showWinner,     setShowWinner]     = useState(false);
   const [showDeposit,    setShowDeposit]    = useState(false);
   const [showPixModal,   setShowPixModal]   = useState(false);
-  const [showAddGame,    setShowAddGame]    = useState(false);
+  const [showAddGame,    setShowAddGame]    = useState(false); // não usado na view pública
   const [depositAmount,  setDepositAmount]  = useState("");
   const [depositorName,  setDepositorName]  = useState("");
   const [pendingDeposit, setPendingDeposit] = useState(null);
-  const [newGame,        setNewGame]        = useState({ name: "", img: "", color: "#D4AF37" });
 
   function shadeColor(hex, amount) {
     try {
@@ -301,14 +300,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
     await persist("pgdeposits", newDeposits);
   }
 
-  async function addGame() {
-    if (!newGame.name.trim()) return;
-    const g = { id: Date.now(), name: newGame.name, img: newGame.img || "https://via.placeholder.com/100/D4AF37/000?text=PG", color: newGame.color };
-    const updated = [...games, g];
-    setGames(updated); setNewGame({ name:"", img:"", color:"#D4AF37" }); setShowAddGame(false);
-    await persist("pggames", updated.map(x => ({ ...x, _imgEl: undefined })));
-  }
-
   function generatePixKey(amount) {
     return `Chave PIX: ${pixConfig.key}\nBeneficiário: ${pixConfig.beneficiary}\nBanco: ${pixConfig.bank}\nValor: R$ ${Number(amount).toFixed(2)}`;
   }
@@ -327,7 +318,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
     canvas: { borderRadius:"50%", boxShadow:"0 0 60px rgba(212,175,55,0.3), 0 0 120px rgba(212,175,55,0.1)", maxWidth:"100%" },
     controls: { display:"flex", justifyContent:"center", gap:12, margin:"14px auto", flexWrap:"wrap", maxWidth:600, padding:"0 20px" },
     spinBtn: { background: spinning||settings.locked ? "rgba(100,100,100,0.3)" : "linear-gradient(135deg, #D4AF37, #8B6914)", color: spinning||settings.locked ? "#666" : "#1a0d00", border:"none", borderRadius:12, padding:"14px 40px", fontSize:16, fontWeight:800, cursor: spinning||settings.locked ? "not-allowed" : "pointer", letterSpacing:2, textTransform:"uppercase", transition:"all 0.3s" },
-    addBtn: { background:"rgba(212,175,55,0.1)", color:"#D4AF37", border:"1px solid rgba(212,175,55,0.4)", borderRadius:12, padding:"14px 24px", fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1 },
     gameList: { maxWidth:600, margin:"0 auto", padding:"0 20px" },
     // ✅ Sem botão de remover — apenas exibe o jogo
     gameItem: { display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, marginBottom:8, background:"rgba(212,175,55,0.05)", border:"1px solid rgba(212,175,55,0.15)" },
@@ -385,7 +375,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
         <button style={rS.spinBtn} onClick={spin} disabled={spinning||settings.locked}>
           {settings.locked ? "🔒 ROLETA BLOQUEADA" : spinning ? "⏳ GIRANDO..." : "🎯 GIRAR ROLETA"}
         </button>
-        <button style={rS.addBtn} onClick={() => setShowAddGame(true)}>＋ Adicionar Jogo</button>
       </div>
 
       {/* Games list — SEM botão de remover para usuários comuns */}
@@ -401,7 +390,7 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
             {/* ✅ Botão de remover REMOVIDO da view pública — disponível apenas no Admin */}
           </div>
         ))}
-        <div style={rS.adminHint}>🔒 Remoção de jogos disponível apenas no painel Admin</div>
+        <div style={rS.adminHint}>🔒 Adição e remoção de jogos disponível apenas no painel Admin</div>
       </div>
 
       {/* Deposit history */}
@@ -472,22 +461,6 @@ function Roulette({ bank, setBank, deposits, setDeposits, games, setGames, pixCo
         </div>
       )}
 
-      {/* Add game modal */}
-      {showAddGame && (
-        <div style={rS.overlay}>
-          <div style={rS.modal}>
-            <div style={rS.modalTitle}>🎮 Adicionar Jogo PG SOFT</div>
-            <input style={rS.input} placeholder="Nome do jogo (ex: Fortune Tiger)" value={newGame.name} onChange={e => setNewGame({...newGame, name:e.target.value})} />
-            <input style={rS.input} placeholder="URL da imagem (opcional)" value={newGame.img} onChange={e => setNewGame({...newGame, img:e.target.value})} />
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-              <span style={{ color:"rgba(212,175,55,0.7)", fontSize:13 }}>Cor da fatia:</span>
-              <input type="color" value={newGame.color} onChange={e => setNewGame({...newGame, color:e.target.value})} style={{ width:48, height:36, borderRadius:8, border:"1px solid rgba(212,175,55,0.3)", background:"none", cursor:"pointer" }} />
-            </div>
-            <button style={rS.confirmBtn} onClick={addGame}>＋ Adicionar à Roleta</button>
-            <button style={rS.cancelBtn} onClick={() => { setShowAddGame(false); setNewGame({name:"",img:"",color:"#D4AF37"}); }}>Cancelar</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
